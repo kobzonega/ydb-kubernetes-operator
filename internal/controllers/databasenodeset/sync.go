@@ -198,7 +198,7 @@ func (r *Reconciler) waitForStatefulSetToScale(
 
 	if databaseNodeSet.Spec.Pause {
 		meta.SetStatusCondition(&databaseNodeSet.Status.Conditions, metav1.Condition{
-			Type:    string(DatabaseNodeSetPaused),
+			Type:    DatabasePausedCondition,
 			Status:  "True",
 			Reason:  ReasonCompleted,
 			Message: "Scaled DatabaseNodeSet to 0 successfully",
@@ -206,7 +206,7 @@ func (r *Reconciler) waitForStatefulSetToScale(
 		databaseNodeSet.Status.State = DatabaseNodeSetPaused
 	} else {
 		meta.SetStatusCondition(&databaseNodeSet.Status.Conditions, metav1.Condition{
-			Type:    string(DatabaseNodeSetReady),
+			Type:    DatabaseNodeSetReadyCondition,
 			Status:  "True",
 			Reason:  ReasonCompleted,
 			Message: fmt.Sprintf("Scaled DatabaseNodeSet to %d successfully", databaseNodeSet.Spec.Nodes),
@@ -279,9 +279,9 @@ func (r *Reconciler) handlePauseResume(
 	r.Log.Info("running step handlePauseResume for Database")
 	if databaseNodeSet.Status.State == DatabaseReady && databaseNodeSet.Spec.Pause {
 		r.Log.Info("`pause: true` was noticed, moving DatabaseNodeSet to state `Paused`")
-		meta.RemoveStatusCondition(&databaseNodeSet.Status.Conditions, string(DatabaseReady))
+		meta.RemoveStatusCondition(&databaseNodeSet.Status.Conditions, DatabaseNodeSetReadyCondition)
 		meta.SetStatusCondition(&databaseNodeSet.Status.Conditions, metav1.Condition{
-			Type:    string(DatabaseNodeSetPaused),
+			Type:    DatabasePausedCondition,
 			Status:  "False",
 			Reason:  ReasonInProgress,
 			Message: "Transitioning DatabaseNodeSet to Paused state",
@@ -292,9 +292,9 @@ func (r *Reconciler) handlePauseResume(
 
 	if databaseNodeSet.Status.State == DatabaseNodeSetPaused && !databaseNodeSet.Spec.Pause {
 		r.Log.Info("`pause: false` was noticed, moving DatabaseNodeSet to state `Ready`")
-		meta.RemoveStatusCondition(&databaseNodeSet.Status.Conditions, string(DatabasePaused))
+		meta.RemoveStatusCondition(&databaseNodeSet.Status.Conditions, DatabasePausedCondition)
 		meta.SetStatusCondition(&databaseNodeSet.Status.Conditions, metav1.Condition{
-			Type:    string(DatabaseNodeSetReady),
+			Type:    DatabaseNodeSetReadyCondition,
 			Status:  "False",
 			Reason:  ReasonInProgress,
 			Message: "Recovering DatabaseNodeSet from Paused state",

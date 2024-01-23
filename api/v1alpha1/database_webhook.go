@@ -34,8 +34,6 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-ydb-tech-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ydb.tech,resources=databases,verbs=create;update,versions=v1alpha1,name=mutate-database.ydb.tech,admissionReviewVersions=v1
-
 func (r *Database) GetDatabasePath() string {
 	if r.Spec.Path != "" {
 		return r.Spec.Path
@@ -52,6 +50,8 @@ func (r *Database) GetLegacyDatabasePath() string {
 type DatabaseDefaulter struct {
 	Client client.Client
 }
+
+// +kubebuilder:webhook:path=/mutate-ydb-tech-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ydb.tech,resources=databases,verbs=create;update,versions=v1alpha1,name=mutate-database.ydb.tech,admissionReviewVersions=v1
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *DatabaseDefaulter) Default(ctx context.Context, obj runtime.Object) error {

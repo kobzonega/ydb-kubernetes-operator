@@ -30,7 +30,6 @@ type InterconnectService struct {
 	Service `json:""`
 
 	TLSConfiguration *TLSConfiguration `json:"tls,omitempty"`
-	ExternalHost     string            `json:"externalHost,omitempty"` // TODO implementation
 }
 
 type StatusService struct {

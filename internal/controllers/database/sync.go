@@ -549,9 +549,8 @@ func (r *Reconciler) handlePauseResume(
 	r.Log.Info("running step handlePauseResume for Database")
 	if database.Status.State == DatabaseReady && database.Spec.Pause {
 		r.Log.Info("`pause: true` was noticed, moving Database to state `Paused`")
-		// meta.RemoveStatusCondition(&database.Status.Conditions, string(DatabaseReady))
 		meta.SetStatusCondition(&database.Status.Conditions, metav1.Condition{
-			Type:    string(DatabasePaused),
+			Type:    DatabasePausedCondition,
 			Status:  "True",
 			Reason:  ReasonCompleted,
 			Message: "State Database set to Paused",
@@ -562,13 +561,7 @@ func (r *Reconciler) handlePauseResume(
 
 	if database.Status.State == DatabasePaused && !database.Spec.Pause {
 		r.Log.Info("`pause: false` was noticed, moving Database to state `Ready`")
-		meta.RemoveStatusCondition(&database.Status.Conditions, string(DatabasePaused))
-		// meta.SetStatusCondition(&database.Status.Conditions, metav1.Condition{
-		// 	Type:    string(DatabaseReady),
-		// 	Status:  "False",
-		// 	Reason:  ReasonInProgress,
-		// 	Message: "Recovering Database from Paused state",
-		// })
+		meta.RemoveStatusCondition(&database.Status.Conditions, DatabasePausedCondition)
 		database.Status.State = DatabaseReady
 		return r.setState(ctx, database)
 	}

@@ -30,7 +30,7 @@ func (b *DatabaseBuilder) SetStatusOnFirstReconcile() (bool, ctrl.Result, error)
 
 		if b.Spec.Pause {
 			meta.SetStatusCondition(&b.Status.Conditions, metav1.Condition{
-				Type:    string(DatabasePaused),
+				Type:    DatabasePausedCondition,
 				Status:  "True",
 				Reason:  ReasonCompleted,
 				Message: "State Database set to Paused",

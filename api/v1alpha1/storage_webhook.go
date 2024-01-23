@@ -50,8 +50,6 @@ func (r *Storage) IsStorageEndpointSecure() bool {
 	return r.Spec.Service.GRPC.TLSConfiguration.Enabled
 }
 
-//+kubebuilder:webhook:path=/mutate-ydb-tech-v1alpha1-storage,mutating=true,failurePolicy=fail,sideEffects=None,groups=ydb.tech,resources=storages,verbs=create;update,versions=v1alpha1,name=mutate-storage.ydb.tech,admissionReviewVersions=v1
-
 // +k8s:deepcopy-gen=false
 type PartialYamlConfig struct {
 	DomainsConfig struct {
@@ -87,6 +85,8 @@ func (r *Storage) IsGRPCSecure() bool {
 type StorageDefaulter struct {
 	Client client.Client
 }
+
+//+kubebuilder:webhook:path=/mutate-ydb-tech-v1alpha1-storage,mutating=true,failurePolicy=fail,sideEffects=None,groups=ydb.tech,resources=storages,verbs=create;update,versions=v1alpha1,name=mutate-storage.ydb.tech,admissionReviewVersions=v1
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *StorageDefaulter) Default(ctx context.Context, obj runtime.Object) error {

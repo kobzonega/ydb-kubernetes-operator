@@ -47,37 +47,19 @@ func (r *Reconciler) Sync(ctx context.Context, cr *ydbv1alpha1.Storage) (ctrl.Re
 		return result, err
 	}
 
-	stop, result, err = r.handleResourcesSync(ctx, &storage)
-	if stop {
-		return result, err
-	}
-
 	stop, result, err = r.syncNodeSetSpecInline(ctx, &storage)
 	if stop {
 		return result, err
 	}
 
-	auth, result, err := r.getYDBCredentials(ctx, &storage)
-	if auth == nil {
+	stop, result, err = r.handleResourcesSync(ctx, &storage)
+	if stop {
 		return result, err
 	}
 
-	if storage.Status.State == StorageResuming {
-		return r.handleResuming(ctx, &storage, auth)
+	if !meta.IsStatusConditionTrue(storage.Status.Conditions, StorageInitializedCondition) {
+		return r.handleFirstStart(ctx, &storage)
 	}
-
-	initialized := meta.IsStatusConditionTrue(storage.Status.Conditions, BlobStorageInitializedCondition)
-
-	if !initialized {
-		return r.handleFirstStart(ctx, &storage, auth)
-	}
-
-	if storage.Status.State != StoragePaused {
-		_, result, err = r.runSelfCheck(ctx, &storage, auth, false)
-		return result, err
-	}
-
-	r.Log.Info(fmt.Sprintf("not running SelfCheck for storage %s, Storage is paused", storage.Name))
 
 	return ctrl.Result{}, nil
 }
@@ -536,9 +518,8 @@ func (r *Reconciler) handlePauseResume(
 	r.Log.Info("running step handlePauseResume for Storage")
 	if storage.Status.State == StorageReady && storage.Spec.Pause {
 		r.Log.Info("`pause: true` was noticed, moving Storage to state `Paused`")
-		// meta.RemoveStatusCondition(&database.Status.Conditions, string(DatabaseReady))
 		meta.SetStatusCondition(&storage.Status.Conditions, metav1.Condition{
-			Type:    string(StoragePaused),
+			Type:    StoragePausedCondition,
 			Status:  "True",
 			Reason:  ReasonCompleted,
 			Message: "State Storage set to Paused",
@@ -549,13 +530,7 @@ func (r *Reconciler) handlePauseResume(
 
 	if storage.Status.State == StoragePaused && !storage.Spec.Pause {
 		r.Log.Info("`pause: false` was noticed, moving Storage to state `Ready`")
-		meta.RemoveStatusCondition(&storage.Status.Conditions, string(DatabasePaused))
-		// meta.SetStatusCondition(&database.Status.Conditions, metav1.Condition{
-		// 	Type:    string(DatabaseReady),
-		// 	Status:  "False",
-		// 	Reason:  ReasonInProgress,
-		// 	Message: "Recovering Database from Paused state",
-		// })
+		meta.RemoveStatusCondition(&storage.Status.Conditions, StoragePausedCondition)
 		storage.Status.State = StorageReady
 		return r.setState(ctx, storage)
 	}
@@ -563,28 +538,9 @@ func (r *Reconciler) handlePauseResume(
 	return Continue, ctrl.Result{}, nil
 }
 
-func (r *Reconciler) handleResuming(
-	ctx context.Context,
-	storage *resources.StorageClusterBuilder,
-	auth ydbCredentials.Credentials,
-) (ctrl.Result, error) {
-	// TODO(tarasov-egor@) discuss, why waitForGoodResultWithoutIssues is switched off everywhere with artgromov@ and apkobzev@
-	// if it's off even in the main reconcile loop, we can not implement the Resuming state using health check
-	waitForGoodResultWithoutIssues := false
-	stop, result, err := r.runSelfCheck(ctx, storage, auth, waitForGoodResultWithoutIssues)
-	if stop {
-		return result, err
-	}
-
-	storage.Status.State = StorageReady
-	_, result, err = r.setState(ctx, storage)
-	return result, err
-}
-
 func (r *Reconciler) handleFirstStart(
 	ctx context.Context,
 	storage *resources.StorageClusterBuilder,
-	auth ydbCredentials.Credentials,
 ) (ctrl.Result, error) {
 	stop, result, err := r.setInitialStatus(ctx, storage)
 	if stop {
@@ -601,6 +557,11 @@ func (r *Reconciler) handleFirstStart(
 		if stop {
 			return result, err
 		}
+	}
+
+	auth, result, err := r.getYDBCredentials(ctx, storage)
+	if auth == nil {
+		return result, err
 	}
 
 	stop, result, err = r.runSelfCheck(ctx, storage, auth, false)
