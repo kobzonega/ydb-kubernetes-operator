@@ -487,7 +487,7 @@ func (r *Reconciler) syncNodeSetSpecInline(
 		databaseNodeSet := databaseNodeSet.DeepCopy()
 		isFoundDatabaseNodeSetSpecInline := false
 		for _, nodeSetSpecInline := range database.Spec.NodeSets {
-			if !nodeSetSpecInline.Remote {
+			if nodeSetSpecInline.Remote == nil {
 				nodeSetName := database.Name + "-" + nodeSetSpecInline.Name
 				if databaseNodeSet.Name == nodeSetName {
 					isFoundDatabaseNodeSetSpecInline = true
@@ -535,7 +535,7 @@ func (r *Reconciler) syncNodeSetSpecInline(
 		remoteDatabaseNodeSet := remoteDatabaseNodeSet.DeepCopy()
 		isFoundRemoteDatabaseNodeSetSpecInline := false
 		for _, nodeSetSpecInline := range database.Spec.NodeSets {
-			if nodeSetSpecInline.Remote {
+			if nodeSetSpecInline.Remote != nil {
 				nodeSetName := database.Name + "-" + nodeSetSpecInline.Name
 				if remoteDatabaseNodeSet.Name == nodeSetName {
 					isFoundRemoteDatabaseNodeSetSpecInline = true
